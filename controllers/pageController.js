@@ -21,6 +21,8 @@ export const createPage = async (req, res) => {
   }
 };
 
+
+
 // GET ALL PAGES
 export const getAllPages = async (req, res) => {
   try {
@@ -75,6 +77,9 @@ export const updatePageById = async (req, res) => {
   }
 };
 
+
+
+
 // UPDATE BY SLUG
 export const updatePageBySlug = async (req, res) => {
   try {
@@ -96,6 +101,9 @@ export const updatePageBySlug = async (req, res) => {
     res.status(500).json({ error: 'Failed to update page', details: error.message });
   }
 };
+
+
+
 
 // DELETE BY ID
 export const deletePageById = async (req, res) => {

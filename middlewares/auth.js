@@ -99,3 +99,22 @@ export const optionalAuth = async (req, res, next) => {
     next();
   }
 };
+
+// Role-based access control middleware
+export const authorizeRoles = (...allowedRoles) => {
+  return (req, res, next) => {
+    if (!req.admin || !req.admin.role) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. No role assigned.'
+      });
+    }
+    if (!allowedRoles.includes(req.admin.role)) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Requires role: ${allowedRoles.join(', ')}`
+      });
+    }
+    next();
+  };
+};

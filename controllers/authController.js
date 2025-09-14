@@ -1,3 +1,116 @@
+// Update user (admin only)
+export const updateAdmin = async (req, res) => {
+  try {
+    if (!req.admin || req.admin.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only admin can update users.' });
+    }
+    const { id } = req.params;
+    const { firstName, lastName, email, phoneNumber, role, isActive } = req.body;
+    const user = await Admin.findById(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (email) user.email = email;
+    if (phoneNumber) user.phoneNumber = phoneNumber;
+    if (role) user.role = role;
+    if (typeof isActive === 'boolean') user.isActive = isActive;
+    await user.save();
+    res.status(200).json({ success: true, message: 'User updated.', user: user.toPublicJSON() });
+  } catch (error) {
+    console.error('Update user error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+
+// Delete user (admin only)
+export const deleteAdmin = async (req, res) => {
+  try {
+    if (!req.admin || req.admin.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Only admin can delete users.' });
+    }
+    const { id } = req.params;
+    const user = await Admin.findByIdAndDelete(id);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+    res.status(200).json({ success: true, message: 'User deleted.' });
+  } catch (error) {
+    console.error('Delete user error:', error);
+    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+  }
+};
+// Get all users (admin, subadmin, user) - admin only
+export const getAllAdmins = async (req, res) => {
+  try {
+    if (!req.admin || req.admin.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin can view all users.'
+      });
+    }
+    const users = await Admin.find().select('-password');
+    res.status(200).json({
+      success: true,
+      users
+    });
+  } catch (error) {
+    console.error('Get all users error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+// Set user role and permissions (admin only)
+export const setUserRoleAndPermissions = async (req, res) => {
+  try {
+    // Only admin can set roles/permissions
+    if (!req.admin || req.admin.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only admin can update roles and permissions.'
+      });
+    }
+    const { userId, role, permissions } = req.body;
+    if (!userId || !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'userId and role are required.'
+      });
+    }
+    if (!['admin', 'subadmin', 'user'].includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid role.'
+      });
+    }
+    const user = await Admin.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.'
+      });
+    }
+    user.role = role;
+    if (permissions) user.permissions = permissions;
+    await user.save();
+    res.status(200).json({
+      success: true,
+      message: 'Role and permissions updated.',
+      user: user.toPublicJSON()
+    });
+  } catch (error) {
+    console.error('Set role/permissions error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
 
@@ -54,10 +167,17 @@ export const registerAdmin = async (req, res) => {
     // Generate token
     const token = generateToken(admin._id);
 
+    // Set HTTP-only cookie
+    res.cookie('Token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.status(201).json({
       success: true,
       message: 'Admin registered successfully',
-      Token: token,
       admin: admin.toPublicJSON()
     });
 
@@ -119,10 +239,17 @@ export const loginAdmin = async (req, res) => {
     // Generate token
     const token = generateToken(admin._id);
 
+    // Set HTTP-only cookie
+    res.cookie('Token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+    });
+
     res.status(200).json({
       success: true,
       message: 'Login successful',
-      Token: token,
       admin: admin.toPublicJSON()
     });
 
@@ -248,6 +375,31 @@ export const changePassword = async (req, res) => {
 
   } catch (error) {
     console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error',
+      error: error.message
+    });
+  }
+};
+
+// Logout Admin
+export const logoutAdmin = async (req, res) => {
+  try {
+    // Clear the HTTP-only cookie
+    res.clearCookie('Token', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax'
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Logout successful'
+    });
+
+  } catch (error) {
+    console.error('Logout error:', error);
     res.status(500).json({
       success: false,
       message: 'Server error',

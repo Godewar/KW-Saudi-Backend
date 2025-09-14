@@ -9,7 +9,6 @@ import {
 
 const router = express.Router();
 import upload  from '../middlewares/upload.js';
-
 // Create agent (user registration style)
 // router.post('/users/register', registerAgent);
 router.post('/user', upload.single('profileImage'), createOrUpdateAgent);

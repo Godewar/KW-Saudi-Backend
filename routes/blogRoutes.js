@@ -3,11 +3,8 @@ import {
   createBlog,
   getAllBlogs,
   getBlogById,
-  getBlogBySlug,
   updateBlog,
-  updateBlogBySlug,
-  deleteBlog,
-  deleteBlogBySlug
+  deleteBlog
 } from '../controllers/blogController.js';
 
 import upload from '../middlewares/upload.js';
@@ -31,9 +28,6 @@ router.get('/blogs', getAllBlogs);
 // Get blog by ID
 router.get('/blog/:id', getBlogById);
 
-// Get blog by slug
-router.get('/blog/slug/:slug', getBlogBySlug);
-
 // Update blog by ID
 router.put(
   '/blog/:id',
@@ -45,13 +39,7 @@ router.put(
   updateBlog
 );
 
-// Update blog by slug
-router.put('/blog/slug/:slug', updateBlogBySlug);
-
 // Delete blog by ID
 router.delete('/blog/:id', deleteBlog);
-
-// Delete blog by slug
-router.delete('/blog/slug/:slug', deleteBlogBySlug);
 
 export default router;

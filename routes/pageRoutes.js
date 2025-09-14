@@ -20,7 +20,7 @@ router.get('/pages', getAllPages);
 router.post(
   '/page',
   upload.fields([
-    { name: 'backgroundImage', maxCount: 1 }
+    { name: 'backgroundImage', maxCount:1 }
   ]),
   createPage
 );
@@ -56,3 +56,8 @@ router.delete('/page/:id', deletePageById);
 router.delete('/page/slug/:slug', deletePageBySlug);
 
 export default router;
+
+
+
+
+

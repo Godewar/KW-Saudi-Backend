@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import cookieParser from 'cookie-parser';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -12,9 +13,14 @@ import seoRoutes from './routes/seoRoutes.js';
 import pageRoutes from './routes/pageRoutes.js';
 // import themeRoutes from './routes/themeRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
+import newsRoutes from './routes/newsRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
 import listingRoutes from './routes/listingRoutes.js'
 import agentRoutes from './routes/agentRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import employeeRoutes from './routes/employeeRoutes.js';
+ import homepageRoute from './routes/homepageRoute.js';
+ import leadRoutes from './routes/leadRoutes.js'
 // import userRoutes from './routes/userRoutes.js';
 
 dotenv.config({ path: path.join(__dirname, 'config', 'config.env') });
@@ -30,6 +36,7 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(cookieParser());
 
 
 app.get('/',(req, res)=>{
@@ -50,8 +57,15 @@ app.use('/api', seoRoutes);
 app.use('/api', pageRoutes);
 // app.use('/api', themeRoutes);
 app.use('/api', blogRoutes);
+app.use('/api', newsRoutes);
+app.use('/api', eventRoutes);
+app.use('/api', homepageRoute)
 app.use('/api/listings', listingRoutes);
 app.use('/api', agentRoutes);
+app.use('/api', leadRoutes);
+
+app.use("/api/employee", employeeRoutes);
+
 // app.use('/api', userRoutes);
 app.use('/uploads', express.static('uploads')); // serve images
 

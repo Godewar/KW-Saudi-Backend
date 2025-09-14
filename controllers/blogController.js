@@ -16,17 +16,13 @@ export const createBlog = async (req, res) => {
 
     const contentImage = req.files?.contentImage?.[0]?.path;
     const coverImage = req.files?.coverImage?.[0]?.path;
-    
+
     // Handle multiple additional images
     const additionalImages = req.files?.additionalImages ? 
       req.files.additionalImages.map(file => file.path) : [];
 
-    // Generate slug from title
-    const slug = title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
-
     const blog = new Blog({
       title,
-      slug,
       content,
       author,
       tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
@@ -60,17 +56,6 @@ export const getAllBlogs = async (req, res) => {
 export const getBlogById = async (req, res) => {
   try {
     const blog = await Blog.findById(req.params.id);
-    if (!blog) return res.status(404).json({ error: 'Blog not found' });
-    res.status(200).json(blog);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to get blog' });
-  }
-};
-
-// Get blog by slug
-export const getBlogBySlug = async (req, res) => {
-  try {
-    const blog = await Blog.findOne({ slug: req.params.slug });
     if (!blog) return res.status(404).json({ error: 'Blog not found' });
     res.status(200).json(blog);
   } catch (error) {
@@ -129,37 +114,11 @@ export const updateBlog = async (req, res) => {
   }
 };
 
-// Update blog by slug
-export const updateBlogBySlug = async (req, res) => {
-  try {
-    const blog = await Blog.findOneAndUpdate(
-      { slug: req.params.slug },
-      req.body,
-      { new: true, runValidators: true }
-    );
-    if (!blog) return res.status(404).json({ error: 'Blog not found' });
-    res.status(200).json(blog);
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update blog', details: error.message });
-  }
-};
-
 // Delete blog by ID
 export const deleteBlog = async (req, res) => {
   try {
     const deleted = await Blog.findByIdAndDelete(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'Blog not found' });
-    res.status(200).json({ message: 'Blog deleted successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to delete blog' });
-  }
-};
-
-// Delete blog by slug
-export const deleteBlogBySlug = async (req, res) => {
-  try {
-    const deleted = await Blog.findOneAndDelete({ slug: req.params.slug });
-    if (!deleted) return res.status(404).json({ message: 'Blog deleted successfully' });
     res.status(200).json({ message: 'Blog deleted successfully' });
   } catch (error) {
     res.status(500).json({ error: 'Failed to delete blog' });

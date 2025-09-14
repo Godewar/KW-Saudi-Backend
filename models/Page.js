@@ -23,6 +23,7 @@ const pageSchema = new mongoose.Schema({
   // contentImage: { type: String, trim: true },
   // backgroundColor: { type: String, trim: true },
   backgroundImage: { type: String, trim: true },
+  // backgroundImage: [String],
   backgroundOverlayContent: { type: String, trim: true },
   status: { 
     type: String, 
