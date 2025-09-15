@@ -27,12 +27,24 @@ dotenv.config({ path: path.join(__dirname, 'config', 'config.env') });
 
 const app = express();
 
+const allowedOrigins = [
+  "http://localhost:3000", // for dev
+  "https://kw-saudi-admin-dashboard-x75g.vercel.app" // for Vercel frontend
+];
+
 // Configure CORS to allow requests from frontend
+// app.use(cors({
+//   origin: ['http://localhost:3000', "https://kw-saudi-admin-dashboard-x75g.vercel.app"],
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+//   allowedHeaders: ['Content-Type', 'Authorization']
+// }));
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true
 }));
 
 app.use(express.json());
@@ -69,6 +81,8 @@ app.use("/api/employee", employeeRoutes);
 // app.use('/api', userRoutes);
 app.use('/uploads', express.static('uploads')); // serve images
 
+
+app.options("*", cors());
 // Start server even if MongoDB is not available (for testing)
 const startServer = () => {
   app.listen(process.env.PORT || 5000, () => {
