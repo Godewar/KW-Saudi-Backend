@@ -72,7 +72,7 @@ app.use('/api', blogRoutes);
 app.use('/api', newsRoutes);
 app.use('/api', eventRoutes);
 app.use('/api', homepageRoute)
-app.use('/api/listings', listingRoutes);
+app.use('/api', listingRoutes);
 app.use('/api', agentRoutes);
 app.use('/api', leadRoutes);
 
