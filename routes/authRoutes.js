@@ -24,11 +24,10 @@ router.get('/auth/all-users', protect, authorizeRoles('admin'), getAllAdmins);
 
 // Public routes
 router.post('/auth/register', registerAdmin);
-// router.post('/auth/login', loginAdmin);
 
-app.post("/auth/login", (req, res) => {
-  res.json({ message: "Login successful" });
-});
+ router.post('/auth/login', loginAdmin);
+
+
 router.post('/auth/logout', logoutAdmin);
 
 
