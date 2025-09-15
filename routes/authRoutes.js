@@ -23,9 +23,9 @@ router.delete('/auth/user/:id', protect, authorizeRoles('admin'), deleteAdmin);
 router.get('/auth/all-users', protect, authorizeRoles('admin'), getAllAdmins);
 
 // Public routes
-router.post('/auth/register', registerAdmin);
+router.post('/auth/register', protect, authorizeRoles('admin'), registerAdmin);
 
- router.post('/auth/login', loginAdmin);
+ router.post('/login', loginAdmin);
 
 
 router.post('/auth/logout', logoutAdmin);
