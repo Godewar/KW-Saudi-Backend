@@ -25,7 +25,7 @@ router.get('/auth/all-users', protect, authorizeRoles('admin'), getAllAdmins);
 // Public routes
 router.post('/auth/register', protect, authorizeRoles('admin'), registerAdmin);
 
- router.post('/login', loginAdmin);
+ router.post('/auth/login', loginAdmin);
 
 
 router.post('/auth/logout', logoutAdmin);
