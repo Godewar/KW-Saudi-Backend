@@ -8,10 +8,10 @@ import upload  from '../middlewares/upload.js';
 const router = express.Router();
 
 
-router.post('/list/properties',  getExternalListings);
-router.get('/property/:id', getPropertyById);
+router.post('listings/list/properties',  getExternalListings);
+router.get('listings/property/:id', getPropertyById);
 
 
-router.get('/property/newdevelopment/:id', getFilteredListings)
+router.get('listings/property/newdevelopment/:id', getFilteredListings)
 
 export default router;
