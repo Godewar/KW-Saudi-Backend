@@ -1,113 +1,3 @@
-// import express from 'express';
-// import mongoose from 'mongoose';
-// import dotenv from 'dotenv';
-// import path from 'path';
-// import { fileURLToPath } from 'url';
-// import cookieParser from 'cookie-parser';
-
-// const __filename = fileURLToPath(import.meta.url);
-// const __dirname = path.dirname(__filename);
-// import cors from 'cors';
-
-// import seoRoutes from './routes/seoRoutes.js';
-// import pageRoutes from './routes/pageRoutes.js';
-// // import themeRoutes from './routes/themeRoutes.js';
-// import blogRoutes from './routes/blogRoutes.js';
-// import newsRoutes from './routes/newsRoutes.js';
-// import eventRoutes from './routes/eventRoutes.js';
-// import listingRoutes from './routes/listingRoutes.js'
-// import agentRoutes from './routes/agentRoutes.js';
-// import authRoutes from './routes/authRoutes.js';
-// import employeeRoutes from './routes/employeeRoutes.js';
-//  import homepageRoute from './routes/homepageRoute.js';
-//  import leadRoutes from './routes/leadRoutes.js'
-// // import userRoutes from './routes/userRoutes.js';
-
-// dotenv.config({ path: path.join(__dirname, 'config', 'config.env') });
-
-// const app = express();
-
-// const allowedOrigins = [
-//   "http://localhost:3000", // for dev
-//   "https://kw-saudi-admin-dashboard-x75g.vercel.app" // for Vercel frontend
-// ];
-
-// // Configure CORS to allow requests from frontend
-// // app.use(cors({
-// //   origin: ['http://localhost:3000', "https://kw-saudi-admin-dashboard-x75g.vercel.app"],
-// //   credentials: true,
-// //   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-// //   allowedHeaders: ['Content-Type', 'Authorization']
-// // }));
-
-// app.use(cors({
-//   origin: allowedOrigins,
-//   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-//   allowedHeaders: ["Content-Type", "Authorization"],
-//   credentials: true
-// }));
-
-// app.use(express.json());
-// app.use(cookieParser());
-
-
-// app.get('/',(req, res)=>{
-//   res.send("backend Working Fine")
-// })
-
-// // Test endpoint for authentication
-// app.get('/api/test', (req, res) => {
-//   res.json({ 
-//     message: 'Backend is working!', 
-//     timestamp: new Date().toISOString(),
-//     status: 'success'
-//   });
-// });
-// // Routes
-// app.use('/api', authRoutes);
-// app.use('/api', seoRoutes);
-// app.use('/api', pageRoutes);
-// // app.use('/api', themeRoutes);
-// app.use('/api', blogRoutes);
-// app.use('/api', newsRoutes);
-// app.use('/api', eventRoutes);
-// app.use('/api', homepageRoute)
-// app.use('/api', listingRoutes);
-// app.use('/api', agentRoutes);
-// app.use('/api', leadRoutes);
-
-// app.use("/api/employee", employeeRoutes);
-
-// // app.use('/api', userRoutes);
-// app.use('/uploads', express.static('uploads')); // serve images
-
-
-// app.options("*", cors());
-// // Start server even if MongoDB is not available (for testing)
-// const startServer = () => {
-//   app.listen(process.env.PORT || 5000, () => {
-//     console.log(`Server running on port ${process.env.PORT || 5000}`);
-//   });
-// };
-
-// // Try to connect to MongoDB, but don't fail if it's not available
-// if (process.env.MONGO_URI) {
-//   mongoose.connect(process.env.MONGO_URI)
-//     .then(() => {
-//       console.log('MongoDB connected');
-//       startServer();
-//     })
-//     .catch((err) => {
-//       console.warn('MongoDB connection failed, starting server without database:', err.message);
-//       console.log('Note: Authentication features will not work without database connection');
-//       startServer();
-//     });
-// } else {
-//   console.log('No MongoDB URI provided, starting server without database');
-//   startServer();
-// }
-
-  
 import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
@@ -117,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import cors from 'cors';
 
 // Route imports
+import authRoutes from './routes/authRoutes.js';
 import seoRoutes from './routes/seoRoutes.js';
 import pageRoutes from './routes/pageRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
@@ -124,7 +15,6 @@ import newsRoutes from './routes/newsRoutes.js';
 import eventRoutes from './routes/eventRoutes.js';
 import listingRoutes from './routes/listingRoutes.js';
 import agentRoutes from './routes/agentRoutes.js';
-import authRoutes from './routes/authRoutes.js';
 import employeeRoutes from './routes/employeeRoutes.js';
 import homepageRoute from './routes/homepageRoute.js';
 import leadRoutes from './routes/leadRoutes.js';
@@ -138,53 +28,59 @@ dotenv.config({ path: path.join(__dirname, 'config', 'config.env') });
 
 const app = express();
 
-// CORS Configuration
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://kw-saudi-admin-dashboard-x75g.vercel.app",
-  "https://kw-saudi-admin-dashboard-x75g-git-main-lokesh-godewars-projects.vercel.app",
-  "https://kw-saudi-admin-dashboard-x75g-jz38259qy.vercel.app"
-];
+// UPDATED CORS FIX - Keep your existing structure but fix CORS
+app.use((req, res, next) => {
+  // Always set these headers for every request
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Max-Age', '3600');
 
-const corsOptions = {
-  origin: function(origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-  credentials: true
-};
+  // Handle preflight requests immediately
+  if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request for:', req.url);
+    return res.status(200).end();
+  }
+  
+  console.log(`${req.method} ${req.url} from origin: ${req.headers.origin}`);
+  next();
+});
 
-// Middleware
-app.use(cors(corsOptions));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Body parsing middleware BEFORE routes
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// Health check endpoint
+// Test endpoint to verify server is working
 app.get('/', (req, res) => {
   res.status(200).json({ 
     status: 'success',
-    message: "Backend Working Fine",
+    message: "KW Admin Backend is running",
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ 
+    status: 'healthy',
     timestamp: new Date().toISOString()
   });
 });
 
-// Test endpoint
-app.get('/api/test', (req, res) => {
+// Test CORS endpoint
+app.get('/api/test-cors', (req, res) => {
   res.status(200).json({ 
-    message: 'Backend is working!', 
-    timestamp: new Date().toISOString(),
-    status: 'success'
+    message: 'CORS is working!',
+    origin: req.headers.origin,
+    timestamp: new Date().toISOString()
   });
 });
 
 // API Routes
-app.use('/api', authRoutes);
+app.use('/api/auth', authRoutes);
 app.use('/api', seoRoutes);
 app.use('/api', pageRoutes);
 app.use('/api', blogRoutes);
@@ -194,70 +90,61 @@ app.use('/api', homepageRoute);
 app.use('/api', listingRoutes);
 app.use('/api', agentRoutes);
 app.use('/api', leadRoutes);
-app.use("/api/employee", employeeRoutes);
+app.use('/api/employee', employeeRoutes);
 
 // Static files
-app.use('/uploads', express.static('uploads'));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Global error handling middleware
+// Global error handling
 app.use((err, req, res, next) => {
-  console.error('Error:', err);
+  console.error('Global error handler:', err);
   res.status(err.status || 500).json({
-    status: 'error',
+    success: false,
     message: err.message || 'Internal server error',
     ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
   });
 });
 
-// Handle 404 routes
+// 404 handler
 app.use('*', (req, res) => {
+  console.log('404 - Route not found:', req.method, req.originalUrl);
   res.status(404).json({
-    status: 'error',
-    message: `Cannot ${req.method} ${req.originalUrl}`
+    success: false,
+    message: `Route ${req.method} ${req.originalUrl} not found`
   });
 });
 
-// MongoDB connection with retry logic
-const connectDB = async (retries = 5) => {
+// Database connection
+const connectDB = async () => {
   try {
-    if (!process.env.MONGO_URI) {
-      throw new Error('MongoDB URI not provided');
+    if (process.env.MONGO_URI) {
+      await mongoose.connect(process.env.MONGO_URI);
+      console.log('✅ MongoDB connected successfully');
+      return true;
+    } else {
+      console.log('⚠️ No MongoDB URI provided');
+      return false;
     }
-
-    await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log('MongoDB connected successfully');
-    return true;
   } catch (error) {
-    if (retries > 0) {
-      console.log(`MongoDB connection failed. Retrying... (${retries} attempts left)`);
-      await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5 seconds
-      return connectDB(retries - 1);
-    }
-    console.error('MongoDB connection failed after all retries:', error.message);
+    console.error('❌ MongoDB connection error:', error.message);
     return false;
   }
 };
 
-// Server startup
+// Start server
 const startServer = async () => {
   const PORT = process.env.PORT || 5000;
   
   try {
-    const isConnected = await connectDB();
-    if (!isConnected) {
-      console.warn('Starting server without database connection');
-      console.log('Note: Some features may not work without database connection');
-    }
-
-    app.listen(PORT, () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
+    await connectDB();
+    
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📍 Environment: ${process.env.NODE_ENV || 'development'}`);
+      console.log(`🌐 Server URL: https://kw-saudi-backend-4.onrender.com`);
     });
   } catch (error) {
-    console.error('Server startup failed:', error);
+    console.error('❌ Server startup failed:', error);
     process.exit(1);
   }
 };
@@ -266,7 +153,7 @@ startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received. Shutting down gracefully...');
+  console.log('SIGTERM received, shutting down gracefully');
   mongoose.connection.close();
   process.exit(0);
 });

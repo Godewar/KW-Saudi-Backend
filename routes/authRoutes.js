@@ -16,27 +16,27 @@ import { protect, authorizeRoles } from '../middlewares/auth.js';
 const router = express.Router();
 
 // Admin: update and delete user
-router.put('/auth/user/:id', protect, authorizeRoles('admin'), updateAdmin);
-router.delete('/auth/user/:id', protect, authorizeRoles('admin'), deleteAdmin);
+router.put('/user/:id', protect, authorizeRoles('admin'), updateAdmin);
+router.delete('/user/:id', protect, authorizeRoles('admin'), deleteAdmin);
 
 // Admin: get all users (admin, subadmin, user)
-router.get('/auth/all-users', protect, authorizeRoles('admin'), getAllAdmins);
+router.get('/all-users', protect, authorizeRoles('admin'), getAllAdmins);
 
 // Public routes
-router.post('/auth/register', protect, authorizeRoles('admin'), registerAdmin);
+router.post('/register', protect, authorizeRoles('admin'), registerAdmin);
 
- router.post('/auth/login', loginAdmin);
+ router.post('/login', loginAdmin);
 
 
-router.post('/auth/logout', logoutAdmin);
+router.post('/logout', logoutAdmin);
 
 
 // Protected routes
-router.get('/auth/profile', protect, getAdminProfile);
-router.put('/auth/profile', protect, updateAdminProfile);
-router.put('/auth/change-password', protect, changePassword);
+router.get('/profile', protect, getAdminProfile);
+router.put('/profile', protect, updateAdminProfile);
+router.put('/change-password', protect, changePassword);
 
 // Admin: set user role and permissions
-router.put('/auth/set-role', protect, authorizeRoles('admin'), setUserRoleAndPermissions);
+router.put('/set-role', protect, authorizeRoles('admin'), setUserRoleAndPermissions);
 
 export default router;

@@ -1,3 +1,7 @@
+import jwt from 'jsonwebtoken';
+import Admin from '../models/Admin.js';
+import bcrypt from 'bcryptjs';
+
 // Update user (admin only)
 export const updateAdmin = async (req, res) => {
   try {
@@ -111,13 +115,12 @@ export const setUserRoleAndPermissions = async (req, res) => {
     });
   }
 };
-import jwt from 'jsonwebtoken';
-import Admin from '../models/Admin.js';
 
 // Generate JWT Token
+// Generate JWT Token
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'your-secret-key', {
-    expiresIn: '7d'
+  return jwt.sign({ id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE || '7d',
   });
 };
 
@@ -194,19 +197,20 @@ export const registerAdmin = async (req, res) => {
 // Login Admin
 export const loginAdmin = async (req, res) => {
   try {
-    const { phoneNumber, password } = req.body;
+    console.log('Login request received:', req.body); // Debug log
+    
+    const { phoneNumber, password } = req.body; // Use phoneNumber as you prefer
 
-    // Validation
     if (!phoneNumber || !password) {
       return res.status(400).json({
         success: false,
-        message: 'Phone number and password are required'
+        message: 'Please provide phone number and password'
       });
     }
 
-    // Find admin by phone number
-    const admin = await Admin.findOne({ phoneNumber });
-
+    // Find admin by phone number (adjust your model accordingly)
+    const admin = await Admin.findOne({ phoneNumber }).select('+password');
+    
     if (!admin) {
       return res.status(401).json({
         success: false,
@@ -214,17 +218,7 @@ export const loginAdmin = async (req, res) => {
       });
     }
 
-    // Check if admin is active
-    if (!admin.isActive) {
-      return res.status(401).json({
-        success: false,
-        message: 'Account is deactivated'
-      });
-    }
-
-    // Check password
-    const isPasswordValid = await admin.comparePassword(password);
-
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -232,33 +226,37 @@ export const loginAdmin = async (req, res) => {
       });
     }
 
-    // Update last login
-    admin.lastLogin = new Date();
-    await admin.save();
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: admin._id },
+      process.env.JWT_SECRET || 'your-secret',
+      { expiresIn: process.env.JWT_EXPIRE || '7d' }
+    );
 
-    // Generate token
-    const token = generateToken(admin._id);
-
-    // Set HTTP-only cookie
-    res.cookie('Token', token, {
+    // Set cookie (as you prefer)
+    res.cookie('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
     });
 
+    console.log('Login successful for:', phoneNumber); // Debug log
+
     res.status(200).json({
       success: true,
-      message: 'Login successful',
-      admin: admin.toPublicJSON()
+      admin: {
+        id: admin._id,
+        name: admin.name,
+        phoneNumber: admin.phoneNumber,
+        role: admin.role
+      }
     });
-
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Server error during login'
     });
   }
 };
