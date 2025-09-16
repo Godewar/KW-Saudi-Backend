@@ -142,7 +142,8 @@ const app = express();
 const allowedOrigins = [
   "http://localhost:3000",
   "https://kw-saudi-admin-dashboard-x75g.vercel.app",
-  "https://kw-saudi-admin-dashboard-x75g-git-main-lokesh-godewars-projects.vercel.app"
+  "https://kw-saudi-admin-dashboard-x75g-git-main-lokesh-godewars-projects.vercel.app",
+  "https://kw-saudi-admin-dashboard-x75g-jz38259qy.vercel.app"
 ];
 
 const corsOptions = {
