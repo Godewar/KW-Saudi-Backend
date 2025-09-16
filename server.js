@@ -62,11 +62,12 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check endpoint
+// Health check endpoint (if not already present)
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'healthy',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    message: 'Server is awake'
   });
 });
 
@@ -150,6 +151,18 @@ const startServer = async () => {
 };
 
 startServer();
+
+// Keep server alive (ping itself every 14 minutes)
+if (process.env.NODE_ENV === 'production') {
+  setInterval(async () => {
+    try {
+      const response = await fetch('https://kw-saudi-backend-4.onrender.com/health');
+      console.log('Keep-alive ping:', response.status);
+    } catch (error) {
+      console.log('Keep-alive ping failed:', error.message);
+    }
+  }, 14 * 60 * 1000); // 14 minutes
+}
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
