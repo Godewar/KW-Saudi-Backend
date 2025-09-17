@@ -2,53 +2,46 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
 
 const adminSchema = new mongoose.Schema({
-  firstName: { 
-    type: String, 
-    required: true,
+  firstName: {
+    type: String,
+    required: [true, 'Please provide a first name'],
     trim: true
   },
-  lastName: { 
-    type: String, 
-    required: true,
+  lastName: {
+    type: String,
+    required: [true, 'Please provide a last name'],
     trim: true
   },
-  email: { 
-    type: String, 
-    required: true, 
+  email: {
+    type: String,
+    required: [true, 'Please provide an email'],
     unique: true,
     lowercase: true,
     trim: true
   },
-  phoneNumber: { 
-    type: String, 
-    required: true,
+  phoneNumber: {
+    type: String,
+    required: [true, 'Please provide a phone number'],
     unique: true,
     trim: true
   },
-  password: { 
-    type: String, 
-    required: true,
-    minlength: 6
+  password: {
+    type: String,
+    required: [true, 'Please provide a password'],
+    minlength: 6,
+    select: false
   },
   role: {
     type: String,
     enum: ['admin', 'subadmin', 'user'],
     default: 'user'
   },
-  // Optional: permissions for fine-grained access (admin can set for subadmin/user)
-  permissions: {
-    type: [String],
-    default: []
-  },
-  isActive: { 
-    type: Boolean, 
-    default: true 
-  },
-  lastLogin: { 
-    type: Date 
+  isActive: {
+    type: Boolean,
+    default: true
   }
-}, { 
-  timestamps: true 
+}, {
+  timestamps: true
 });
 
 // Hash password before saving
@@ -58,22 +51,11 @@ adminSchema.pre('save', async function(next) {
   try {
     const salt = await bcrypt.genSalt(12);
     this.password = await bcrypt.hash(this.password, salt);
+    console.log('Password hashed for user:', this.phoneNumber);
     next();
   } catch (error) {
     next(error);
   }
 });
-
-// Method to compare password
-adminSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
-
-// Method to get public profile (without password)
-adminSchema.methods.toPublicJSON = function() {
-  const admin = this.toObject();
-  delete admin.password;
-  return admin;
-};
 
 export default mongoose.model('Admin', adminSchema);

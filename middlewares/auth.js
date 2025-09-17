@@ -1,120 +1,51 @@
 import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
 
-export const protect = async (req, res, next) => {
+export const authenticateAdmin = async (req, res, next) => {
   try {
     let token;
 
-    // Check for token in headers
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    // Get token from cookie or Authorization header
+    if (req.cookies.token) {
+      token = req.cookies.token;
+      console.log('Token found in cookies');
+    } else if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
       token = req.headers.authorization.split(' ')[1];
-    }
-
-    // Check for token in cookies
-    if (!token && req.cookies && req.cookies.Token) {
-      token = req.cookies.Token;
+      console.log('Token found in Authorization header');
     }
 
     if (!token) {
+      console.log('No token provided');
       return res.status(401).json({
         success: false,
-        message: 'Not authorized, no token'
+        message: 'Access denied. No token provided.'
       });
     }
 
-    try {
-      // Verify token
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-      
-      // Get admin from token
-      const admin = await Admin.findById(decoded.id).select('-password');
-      
-      if (!admin) {
-        return res.status(401).json({
-          success: false,
-          message: 'Token is not valid'
-        });
-      }
-
-      // Check if admin is active
-      if (!admin.isActive) {
-        return res.status(401).json({
-          success: false,
-          message: 'Account is deactivated'
-        });
-      }
-
-      req.adminId = admin._id;
-      req.admin = admin;
-      next();
-
-    } catch (error) {
+    // Verify token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Token decoded, admin ID:', decoded.id);
+    
+    // Get admin from token
+    const admin = await Admin.findById(decoded.id);
+    
+    if (!admin) {
+      console.log('Admin not found for token');
       return res.status(401).json({
         success: false,
-        message: 'Token is not valid'
+        message: 'Invalid token. Admin not found.'
       });
     }
 
+    console.log('Admin authenticated:', admin.firstName, admin.lastName, 'Role:', admin.role);
+    req.admin = admin;
+    req.adminId = admin._id;
+    next();
   } catch (error) {
     console.error('Auth middleware error:', error);
-    res.status(500).json({
+    res.status(401).json({
       success: false,
-      message: 'Server error'
+      message: 'Invalid token.'
     });
   }
-};
-
-// Optional auth middleware (doesn't require token but adds admin info if present)
-export const optionalAuth = async (req, res, next) => {
-  try {
-    let token;
-
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-
-    if (!token && req.cookies && req.cookies.Token) {
-      token = req.cookies.Token;
-    }
-
-    if (token) {
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
-        const admin = await Admin.findById(decoded.id).select('-password');
-        
-        if (admin && admin.isActive) {
-          req.adminId = admin._id;
-          req.admin = admin;
-        }
-      } catch (error) {
-        // Token is invalid, but we don't fail the request
-        console.log('Invalid token in optional auth:', error.message);
-      }
-    }
-
-    next();
-
-  } catch (error) {
-    console.error('Optional auth middleware error:', error);
-    next();
-  }
-};
-
-// Role-based access control middleware
-export const authorizeRoles = (...allowedRoles) => {
-  return (req, res, next) => {
-    if (!req.admin || !req.admin.role) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. No role assigned.'
-      });
-    }
-    if (!allowedRoles.includes(req.admin.role)) {
-      return res.status(403).json({
-        success: false,
-        message: `Access denied. Requires role: ${allowedRoles.join(', ')}`
-      });
-    }
-    next();
-  };
 };

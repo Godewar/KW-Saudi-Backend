@@ -28,16 +28,25 @@ dotenv.config({ path: path.join(__dirname, 'config', 'config.env') });
 
 const app = express();
 
-// UPDATED CORS FIX - Keep your existing structure but fix CORS
+// CORS Configuration
 app.use((req, res, next) => {
-  // Always set these headers for every request
-  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "http://localhost:5173",
+    "https://kw-saudi-admin-dashboard.vercel.app"
+  ];
+  
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.header('Access-Control-Allow-Origin', origin || '*');
+  }
+  
   res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control, Pragma');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cache-Control');
   res.header('Access-Control-Allow-Credentials', 'true');
   res.header('Access-Control-Max-Age', '3600');
 
-  // Handle preflight requests immediately
   if (req.method === 'OPTIONS') {
     console.log('Handling OPTIONS request for:', req.url);
     return res.status(200).end();
@@ -47,12 +56,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Body parsing middleware BEFORE routes
+// Body parsing middleware
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(cookieParser());
 
-// Test endpoint to verify server is working
+// Test endpoints
 app.get('/', (req, res) => {
   res.status(200).json({ 
     status: 'success',
@@ -62,7 +71,6 @@ app.get('/', (req, res) => {
   });
 });
 
-// Health check endpoint (if not already present)
 app.get('/health', (req, res) => {
   res.status(200).json({ 
     status: 'healthy',
@@ -71,7 +79,6 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Test CORS endpoint
 app.get('/api/test-cors', (req, res) => {
   res.status(200).json({ 
     message: 'CORS is working!',
@@ -152,7 +159,7 @@ const startServer = async () => {
 
 startServer();
 
-// Keep server alive (ping itself every 14 minutes)
+// Keep server alive in production
 if (process.env.NODE_ENV === 'production') {
   setInterval(async () => {
     try {
@@ -161,7 +168,7 @@ if (process.env.NODE_ENV === 'production') {
     } catch (error) {
       console.log('Keep-alive ping failed:', error.message);
     }
-  }, 14 * 60 * 1000); // 14 minutes
+  }, 14 * 60 * 1000);
 }
 
 // Graceful shutdown

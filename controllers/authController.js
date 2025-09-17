@@ -2,121 +2,6 @@ import jwt from 'jsonwebtoken';
 import Admin from '../models/Admin.js';
 import bcrypt from 'bcryptjs';
 
-// Update user (admin only)
-export const updateAdmin = async (req, res) => {
-  try {
-    if (!req.admin || req.admin.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Only admin can update users.' });
-    }
-    const { id } = req.params;
-    const { firstName, lastName, email, phoneNumber, role, isActive } = req.body;
-    const user = await Admin.findById(id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-    if (firstName) user.firstName = firstName;
-    if (lastName) user.lastName = lastName;
-    if (email) user.email = email;
-    if (phoneNumber) user.phoneNumber = phoneNumber;
-    if (role) user.role = role;
-    if (typeof isActive === 'boolean') user.isActive = isActive;
-    await user.save();
-    res.status(200).json({ success: true, message: 'User updated.', user: user.toPublicJSON() });
-  } catch (error) {
-    console.error('Update user error:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-};
-
-// Delete user (admin only)
-export const deleteAdmin = async (req, res) => {
-  try {
-    if (!req.admin || req.admin.role !== 'admin') {
-      return res.status(403).json({ success: false, message: 'Only admin can delete users.' });
-    }
-    const { id } = req.params;
-    const user = await Admin.findByIdAndDelete(id);
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found.' });
-    }
-    res.status(200).json({ success: true, message: 'User deleted.' });
-  } catch (error) {
-    console.error('Delete user error:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-};
-// Get all users (admin, subadmin, user) - admin only
-export const getAllAdmins = async (req, res) => {
-  try {
-    if (!req.admin || req.admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admin can view all users.'
-      });
-    }
-    const users = await Admin.find().select('-password');
-    res.status(200).json({
-      success: true,
-      users
-    });
-  } catch (error) {
-    console.error('Get all users error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-// Set user role and permissions (admin only)
-export const setUserRoleAndPermissions = async (req, res) => {
-  try {
-    // Only admin can set roles/permissions
-    if (!req.admin || req.admin.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admin can update roles and permissions.'
-      });
-    }
-    const { userId, role, permissions } = req.body;
-    if (!userId || !role) {
-      return res.status(400).json({
-        success: false,
-        message: 'userId and role are required.'
-      });
-    }
-    if (!['admin', 'subadmin', 'user'].includes(role)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid role.'
-      });
-    }
-    const user = await Admin.findById(userId);
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: 'User not found.'
-      });
-    }
-    user.role = role;
-    if (permissions) user.permissions = permissions;
-    await user.save();
-    res.status(200).json({
-      success: true,
-      message: 'Role and permissions updated.',
-      user: user.toPublicJSON()
-    });
-  } catch (error) {
-    console.error('Set role/permissions error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server error',
-      error: error.message
-    });
-  }
-};
-
-// Generate JWT Token
 // Generate JWT Token
 const generateToken = (id) => {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -124,10 +9,104 @@ const generateToken = (id) => {
   });
 };
 
-// Register Admin
-export const registerAdmin = async (req, res) => {
+// Login Admin
+export const login = async (req, res) => {
   try {
-    const { firstName, lastName, email, phoneNumber, password } = req.body;
+    console.log('=== LOGIN REQUEST START ===');
+    console.log('Request body:', req.body);
+    
+    const { phoneNumber, password } = req.body;
+
+    if (!phoneNumber || !password) {
+      console.log('Missing credentials');
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide phone number and password'
+      });
+    }
+
+    // Find admin by phoneNumber
+    console.log('Looking for admin with phoneNumber:', phoneNumber);
+    const admin = await Admin.findOne({ phoneNumber }).select('+password');
+    
+    if (!admin) {
+      console.log('No admin found with phoneNumber:', phoneNumber);
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    console.log('Admin found:', admin.firstName, admin.lastName, 'Role:', admin.role);
+
+    // Check password
+    const isPasswordValid = await bcrypt.compare(password, admin.password);
+    console.log('Password valid:', isPasswordValid);
+
+    if (!isPasswordValid) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid credentials'
+      });
+    }
+
+    // Generate JWT token
+    const token = generateToken(admin._id);
+    console.log('Token generated successfully');
+
+    // Set secure HTTP-only cookie
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      path: '/'
+    });
+
+    console.log('Login successful for:', phoneNumber, 'Role:', admin.role);
+    console.log('=== LOGIN REQUEST END ===');
+
+    res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      admin: {
+        id: admin._id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        phoneNumber: admin.phoneNumber,
+        email: admin.email,
+        role: admin.role,
+        isActive: admin.isActive
+      },
+      token
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error during login: ' + error.message
+    });
+  }
+};
+
+// Register Admin
+export const register = async (req, res) => {
+  try {
+    console.log('=== REGISTER REQUEST START ===');
+    console.log('Request body:', req.body);
+    console.log('Requester admin role:', req.admin?.role);
+    
+    const { firstName, lastName, email, phoneNumber, password, role = 'user' } = req.body;
+
+    // Only admin can register users with admin/subadmin roles
+    if (role === 'admin' || role === 'subadmin') {
+      if (req.admin.role !== 'admin') {
+        return res.status(403).json({
+          success: false,
+          message: 'Only admin can create admin/subadmin accounts'
+        });
+      }
+    }
 
     // Validation
     if (!firstName || !lastName || !email || !phoneNumber || !password) {
@@ -152,7 +131,7 @@ export const registerAdmin = async (req, res) => {
     if (existingAdmin) {
       return res.status(400).json({
         success: false,
-        message: 'Admin with this email or phone number already exists'
+        message: 'User with this email or phone number already exists'
       });
     }
 
@@ -162,26 +141,25 @@ export const registerAdmin = async (req, res) => {
       lastName,
       email,
       phoneNumber,
-      password
+      password,
+      role: role || 'user'
     });
 
     await admin.save();
-
-    // Generate token
-    const token = generateToken(admin._id);
-
-    // Set HTTP-only cookie
-    res.cookie('Token', token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-    });
+    console.log('Admin created successfully with role:', admin.role);
 
     res.status(201).json({
       success: true,
-      message: 'Admin registered successfully',
-      admin: admin.toPublicJSON()
+      message: 'User registered successfully',
+      admin: {
+        id: admin._id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        email: admin.email,
+        phoneNumber: admin.phoneNumber,
+        role: admin.role,
+        isActive: admin.isActive
+      }
     });
 
   } catch (error) {
@@ -194,69 +172,25 @@ export const registerAdmin = async (req, res) => {
   }
 };
 
-// Login Admin
-export const loginAdmin = async (req, res) => {
+// Logout Admin
+export const logout = async (req, res) => {
   try {
-    console.log('Login request received:', req.body); // Debug log
-    
-    const { phoneNumber, password } = req.body; // Use phoneNumber as you prefer
-
-    if (!phoneNumber || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Please provide phone number and password'
-      });
-    }
-
-    // Find admin by phone number (adjust your model accordingly)
-    const admin = await Admin.findOne({ phoneNumber }).select('+password');
-    
-    if (!admin) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, admin.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({
-        success: false,
-        message: 'Invalid credentials'
-      });
-    }
-
-    // Generate JWT token
-    const token = jwt.sign(
-      { id: admin._id },
-      process.env.JWT_SECRET || 'your-secret',
-      { expiresIn: process.env.JWT_EXPIRE || '7d' }
-    );
-
-    // Set cookie (as you prefer)
-    res.cookie('token', token, {
+    res.clearCookie('token', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+      path: '/'
     });
-
-    console.log('Login successful for:', phoneNumber); // Debug log
 
     res.status(200).json({
       success: true,
-      admin: {
-        id: admin._id,
-        name: admin.name,
-        phoneNumber: admin.phoneNumber,
-        role: admin.role
-      }
+      message: 'Logout successful'
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('Logout error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error during login'
+      message: 'Server error'
     });
   }
 };
@@ -275,15 +209,21 @@ export const getAdminProfile = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      admin
+      admin: {
+        id: admin._id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        email: admin.email,
+        phoneNumber: admin.phoneNumber,
+        role: admin.role,
+        isActive: admin.isActive
+      }
     });
-
   } catch (error) {
-    console.error('Get profile error:', error);
+    console.error('Get admin profile error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     });
   }
 };
@@ -291,8 +231,13 @@ export const getAdminProfile = async (req, res) => {
 // Update Admin Profile
 export const updateAdminProfile = async (req, res) => {
   try {
-    const { firstName, lastName, email } = req.body;
-    const admin = await Admin.findById(req.adminId);
+    const { firstName, lastName, email, phoneNumber } = req.body;
+
+    const admin = await Admin.findByIdAndUpdate(
+      req.adminId,
+      { firstName, lastName, email, phoneNumber },
+      { new: true, runValidators: true }
+    ).select('-password');
 
     if (!admin) {
       return res.status(404).json({
@@ -301,25 +246,16 @@ export const updateAdminProfile = async (req, res) => {
       });
     }
 
-    // Update fields
-    if (firstName) admin.firstName = firstName;
-    if (lastName) admin.lastName = lastName;
-    if (email) admin.email = email;
-
-    await admin.save();
-
     res.status(200).json({
       success: true,
       message: 'Profile updated successfully',
-      admin: admin.toPublicJSON()
+      admin
     });
-
   } catch (error) {
-    console.error('Update profile error:', error);
+    console.error('Update admin profile error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     });
   }
 };
@@ -332,18 +268,55 @@ export const changePassword = async (req, res) => {
     if (!currentPassword || !newPassword) {
       return res.status(400).json({
         success: false,
-        message: 'Current password and new password are required'
+        message: 'Please provide current password and new password'
       });
     }
 
-    if (newPassword.length < 6) {
+    const admin = await Admin.findById(req.adminId).select('+password');
+    
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'Admin not found'
+      });
+    }
+
+    // Check current password
+    const isCurrentPasswordValid = await bcrypt.compare(currentPassword, admin.password);
+    if (!isCurrentPasswordValid) {
       return res.status(400).json({
         success: false,
-        message: 'New password must be at least 6 characters long'
+        message: 'Current password is incorrect'
       });
     }
 
-    const admin = await Admin.findById(req.adminId);
+    // Update password (will be hashed by pre-save middleware)
+    admin.password = newPassword;
+    await admin.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Password changed successfully'
+    });
+  } catch (error) {
+    console.error('Change password error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
+// Update Admin (Admin only)
+export const updateAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const admin = await Admin.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true
+    }).select('-password');
 
     if (!admin) {
       return res.status(404).json({
@@ -352,56 +325,102 @@ export const changePassword = async (req, res) => {
       });
     }
 
-    // Verify current password
-    const isCurrentPasswordValid = await admin.comparePassword(currentPassword);
+    res.status(200).json({
+      success: true,
+      message: 'Admin updated successfully',
+      admin
+    });
+  } catch (error) {
+    console.error('Update admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
 
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({
+// Delete Admin (Admin only)
+export const deleteAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const admin = await Admin.findByIdAndDelete(id);
+
+    if (!admin) {
+      return res.status(404).json({
         success: false,
-        message: 'Current password is incorrect'
+        message: 'Admin not found'
       });
     }
 
-    // Update password
-    admin.password = newPassword;
-    await admin.save();
-
     res.status(200).json({
       success: true,
-      message: 'Password changed successfully'
+      message: 'Admin deleted successfully'
     });
-
   } catch (error) {
-    console.error('Change password error:', error);
+    console.error('Delete admin error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     });
   }
 };
 
-// Logout Admin
-export const logoutAdmin = async (req, res) => {
+// Get All Admins (Admin only)
+export const getAllAdmins = async (req, res) => {
   try {
-    // Clear the HTTP-only cookie
-    res.clearCookie('Token', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax'
-    });
+    const admins = await Admin.find({}).select('-password').sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
-      message: 'Logout successful'
+      count: admins.length,
+      admins
     });
-
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error('Get all admins error:', error);
     res.status(500).json({
       success: false,
-      message: 'Server error',
-      error: error.message
+      message: 'Server error'
     });
   }
 };
+
+// Set User Role and Permissions (Admin only)
+export const setUserRoleAndPermissions = async (req, res) => {
+  try {
+    const { userId, role } = req.body;
+
+    if (!userId || !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide user ID and role'
+      });
+    }
+
+    const admin = await Admin.findByIdAndUpdate(
+      userId,
+      { role },
+      { new: true, runValidators: true }
+    ).select('-password');
+
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User role updated successfully',
+      admin
+    });
+  } catch (error) {
+    console.error('Set user role error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
+
